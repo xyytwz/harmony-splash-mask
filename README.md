@@ -130,8 +130,8 @@ hdc shell "hilog | grep --line-buffered -E 'SplashMask|NotifyCompleteFirstFrameD
 
 实战全过程复盘（含 AI 方案对比与人机协作方法论）：
 
-- 博客园：（发布后补充）
-- 掘金：（发布后补充）
+- 博客园：https://www.cnblogs.com/xyyt/p/23696775
+- 掘金：https://juejin.cn/post/7708953356711133219
 
 ## License
 

@@ -1,0 +1,15 @@
+# IDE
+.idea/
+.vscode/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# 临时产物
+dist/
+out/

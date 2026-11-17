@@ -1,0 +1,48 @@
+/**
+ * harmony-splash-mask · uni-app 侧撤遮罩信号（双信号竞速取先到）
+ *
+ * 核心原则：遮罩淡出必须揭示"已上屏的最终页"。未登录冷启的最终页是登录页、
+ * 已登录是首页——每条路径挂自己的信号，谁先到谁撤，重复调用无害
+ * （SplashWindowPage 内 closing 标志幂等防重）。
+ *
+ * 单挂"首页数据就绪"的坑：未登录时用户看的登录页上屏更晚，淡出就把白暴露了；
+ * 单挂"登录页就绪"的坑：已登录路径白白多等登录页加载。双信号同时消除两个方向的坑。
+ */
+
+// ========== 片段 1：登录页（未登录路径的最终页） ==========
+// <script setup lang="ts"> 内：
+// #ifdef APP-HARMONY
+import { onReady } from '@dcloudio/uni-app';
+
+onReady(() => {
+  setTimeout(() => {
+    const harmonyApi = uni as typeof uni & { closeSplashMask?: () => void };
+    if (typeof harmonyApi.closeSplashMask === 'function') {
+      harmonyApi.closeSplashMask();
+    }
+  }, 50); // 登录页已上屏，50ms 后即撤；无网络依赖，未登录路径不再等首页数据请求
+});
+// #endif
+
+// ========== 片段 2：首页（已登录路径的最终页） ==========
+// <script setup lang="ts"> 内（isPageLoading 为你的首屏数据 loading 态）：
+// #ifdef APP-HARMONY
+watch(isPageLoading, (loading) => {
+  if (!loading) {
+    // 数据就绪后留 250ms 覆盖首页图片/复杂组件上屏，避免淡出露白；
+    // 未登录路径由登录页 onReady 信号先到先撤，不受此延时拖慢。
+    setTimeout(() => {
+      const harmonyApi = uni as typeof uni & { closeSplashMask?: () => void };
+      if (typeof harmonyApi.closeSplashMask === 'function') {
+        harmonyApi.closeSplashMask();
+      }
+    }, 250);
+  }
+});
+// #endif
+
+// ========== 调参经验（实测） ==========
+// 1. 首页延时 100ms 时白屏明显（登录页/首页图片未上屏），250ms 是"白屏不明显"的平衡点；
+// 2. 遮罩淡出 160ms（EaseIn）已内置在 SplashWindowPage.ets，前段透明度变化缓，
+//    为底部页面上屏留窗口；若你的首页很重可把淡出改回 260ms；
+// 3. 只有一条启动路径（无登录/未登录分支）时，只挂对应那一条信号即可。
